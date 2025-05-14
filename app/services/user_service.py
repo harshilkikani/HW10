@@ -53,6 +53,12 @@ class UserService:
     async def create(cls, session: AsyncSession, user_data: Dict[str, str], email_service: EmailService) -> Optional[User]:
         try:
             validated_data = UserCreate(**user_data).model_dump()
+            # Enforce unique nickname if provided
+            if 'nickname' in validated_data and validated_data['nickname']:
+                existing_nick = await cls.get_by_nickname(session, validated_data['nickname'])
+                if existing_nick:
+                    logger.error("User with given nickname already exists.")
+                    return None
             existing_user = await cls.get_by_email(session, validated_data['email'])
             if existing_user:
                 logger.error("User with given email already exists.")
@@ -60,38 +66,56 @@ class UserService:
             validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
             new_user = User(**validated_data)
             new_user.verification_token = generate_verification_token()
-            new_nickname = generate_nickname()
-            while await cls.get_by_nickname(session, new_nickname):
+            # If nickname not provided, generate a unique one
+            if not new_user.nickname:
                 new_nickname = generate_nickname()
-            new_user.nickname = new_nickname
+                while await cls.get_by_nickname(session, new_nickname):
+                    new_nickname = generate_nickname()
+                new_user.nickname = new_nickname
             session.add(new_user)
             await session.commit()
             await email_service.send_verification_email(new_user)
-            
             return new_user
         except ValidationError as e:
             logger.error(f"Validation error during user creation: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error during user creation: {e}")
             return None
 
     @classmethod
     async def update(cls, session: AsyncSession, user_id: UUID, update_data: Dict[str, str]) -> Optional[User]:
         try:
-            # validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
             validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
-
+            # Enforce unique nickname if updating
+            if 'nickname' in validated_data and validated_data['nickname']:
+                existing_nick = await cls.get_by_nickname(session, validated_data['nickname'])
+                user = await cls.get_by_id(session, user_id)
+                if existing_nick and existing_nick.id != user_id:
+                    logger.error("Nickname already taken by another user.")
+                    return None
+            if 'email' in validated_data and validated_data['email']:
+                existing_user = await cls.get_by_email(session, validated_data['email'])
+                if existing_user and existing_user.id != user_id:
+                    logger.error("Email already taken by another user.")
+                    return None
             if 'password' in validated_data:
                 validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
+            # Only update provided fields (handle edge cases for bio/profile_picture_url)
             query = update(User).where(User.id == user_id).values(**validated_data).execution_options(synchronize_session="fetch")
             await cls._execute_query(session, query)
             updated_user = await cls.get_by_id(session, user_id)
             if updated_user:
-                session.refresh(updated_user)  # Explicitly refresh the updated user object
+                session.refresh(updated_user)
                 logger.info(f"User {user_id} updated successfully.")
                 return updated_user
             else:
                 logger.error(f"User {user_id} not found after update attempt.")
             return None
-        except Exception as e:  # Broad exception handling for debugging
+        except ValidationError as e:
+            logger.error(f"Validation error during user update: {e}")
+            return None
+        except Exception as e:
             logger.error(f"Error during user update: {e}")
             return None
 

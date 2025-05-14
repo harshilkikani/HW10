@@ -45,6 +45,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_nickname'), 'users', ['nickname'], unique=True)
+    # NOTE: Username and password validation is enforced at the application/schema level (see app/schemas/user_schemas.py). No DB-level constraint added in this migration.
     # ### end Alembic commands ###
 
 

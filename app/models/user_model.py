@@ -54,8 +54,8 @@ class User(Base):
     __mapper_args__ = {"eager_defaults": True}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    nickname: Mapped[str] = Column(String(50), unique=True, nullable=False, index=True)
-    email: Mapped[str] = Column(String(255), unique=True, nullable=False, index=True)
+    nickname: Mapped[str] = Column(String(50), unique=True, nullable=False, index=True, doc="Unique nickname for the user. Must be 3-50 chars, alphanumeric, underscores, or hyphens.")
+    email: Mapped[str] = Column(String(255), unique=True, nullable=False, index=True, doc="Unique email address for the user.")
     first_name: Mapped[str] = Column(String(100), nullable=True)
     last_name: Mapped[str] = Column(String(100), nullable=True)
     bio: Mapped[str] = Column(String(500), nullable=True)
@@ -80,12 +80,15 @@ class User(Base):
         return f"<User {self.nickname}, Role: {self.role.name}>"
 
     def lock_account(self):
+        """Lock the user account (sets is_locked to True)."""
         self.is_locked = True
 
     def unlock_account(self):
+        """Unlock the user account (sets is_locked to False)."""
         self.is_locked = False
 
     def verify_email(self):
+        """Mark the user's email as verified (sets email_verified to True)."""
         self.email_verified = True
 
     def has_role(self, role_name: UserRole) -> bool:

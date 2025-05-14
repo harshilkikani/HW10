@@ -41,6 +41,29 @@ class UserCreate(UserBase):
     email: EmailStr = Field(..., example="john.doe@example.com")
     password: str = Field(..., example="Secure*1234")
 
+    @validator('password')
+    def password_complexity(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one digit')
+        if not any(c in '!@#$%^&*()-_=+[{]}|;:,<.>/?' for c in v):
+            raise ValueError('Password must contain at least one special character')
+        return v
+
+    @validator('nickname')
+    def nickname_valid(cls, v):
+        if v is not None:
+            if len(v) < 3 or len(v) > 50:
+                raise ValueError('Nickname must be between 3 and 50 characters')
+            if not re.match(r'^[\w-]+$', v):
+                raise ValueError('Nickname can only contain letters, numbers, underscores, and hyphens')
+        return v
+
 class UserUpdate(UserBase):
     email: Optional[EmailStr] = Field(None, example="john.doe@example.com")
     nickname: Optional[str] = Field(None, min_length=3, pattern=r'^[\w-]+$', example="john_doe123")
@@ -56,6 +79,15 @@ class UserUpdate(UserBase):
         if not any(values.values()):
             raise ValueError("At least one field must be provided for update")
         return values
+
+    @validator('nickname')
+    def nickname_valid(cls, v):
+        if v is not None:
+            if len(v) < 3 or len(v) > 50:
+                raise ValueError('Nickname must be between 3 and 50 characters')
+            if not re.match(r'^[\w-]+$', v):
+                raise ValueError('Nickname can only contain letters, numbers, underscores, and hyphens')
+        return v
 
 class UserResponse(UserBase):
     id: uuid.UUID = Field(..., example=uuid.uuid4())

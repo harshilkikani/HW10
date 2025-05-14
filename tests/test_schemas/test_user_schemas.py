@@ -67,3 +67,18 @@ def test_user_base_invalid_email(user_base_data_invalid):
     
     assert "value is not a valid email address" in str(exc_info.value)
     assert "john.doe.example.com" in str(exc_info.value)
+
+# Test invalid nickname (special characters)
+def test_usercreate_invalid_nickname():
+    with pytest.raises(ValueError):
+        UserCreate(email="a@b.com", password="ValidPass123!", nickname="bad!@#")
+
+# Test invalid password (too weak)
+def test_usercreate_weak_password():
+    with pytest.raises(ValueError):
+        UserCreate(email="a@b.com", password="password", nickname="goodnick")
+
+# Test valid user creation
+def test_usercreate_valid():
+    obj = UserCreate(email="a@b.com", password="ValidPass123!", nickname="goodnick")
+    assert obj.nickname == "goodnick"

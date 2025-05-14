@@ -142,6 +142,7 @@ async def test_login_locked_user(async_client, locked_user):
     response = await async_client.post("/login/", data=urlencode(form_data), headers={"Content-Type": "application/x-www-form-urlencoded"})
     assert response.status_code == 400
     assert "Account locked due to too many failed login attempts." in response.json().get("detail", "")
+
 @pytest.mark.asyncio
 async def test_delete_user_does_not_exist(async_client, admin_token):
     non_existent_user_id = "00000000-0000-0000-0000-000000000000"  # Valid UUID format
@@ -189,3 +190,34 @@ async def test_list_users_unauthorized(async_client, user_token):
         headers={"Authorization": f"Bearer {user_token}"}
     )
     assert response.status_code == 403  # Forbidden, as expected for regular user
+
+@pytest.mark.asyncio
+async def test_create_user_invalid_nickname_api(async_client, admin_token):
+    user_data = {
+        "nickname": "bad!@#",
+        "email": "badnickapi@example.com",
+        "password": "ValidPassword123!",
+    }
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.post("/users/", json=user_data, headers=headers)
+    assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_create_user_weak_password_api(async_client, admin_token):
+    user_data = {
+        "nickname": "weakpassapi",
+        "email": "weakpassapi@example.com",
+        "password": "password",
+    }
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.post("/users/", json=user_data, headers=headers)
+    assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_update_profile_bio_and_picture_api(async_client, admin_user, admin_token):
+    update_data = {"bio": "API bio update", "profile_picture_url": "https://example.com/api-pic.jpg"}
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.put(f"/users/{admin_user.id}", json=update_data, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["bio"] == "API bio update"
+    assert response.json()["profile_picture_url"] == "https://example.com/api-pic.jpg"

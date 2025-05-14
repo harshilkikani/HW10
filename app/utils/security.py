@@ -51,3 +51,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def generate_verification_token():
     return secrets.token_urlsafe(16)  # Generates a secure 16-byte URL-safe token
+
+def is_strong_password(password: str) -> bool:
+    """Check if the password meets strength requirements (min 8 chars, upper, lower, digit, special)."""
+    if len(password) < 8:
+        return False
+    if not any(c.isupper() for c in password):
+        return False
+    if not any(c.islower() for c in password):
+        return False
+    if not any(c.isdigit() for c in password):
+        return False
+    if not any(c in '!@#$%^&*()-_=+[{]}|;:,<.>/?' for c in password):
+        return False
+    return True

@@ -36,6 +36,10 @@ from app.services.email_service import EmailService
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 settings = get_settings()
+
+# NOTE: Username and password validation is enforced at the schema level (see app/schemas/user_schemas.py).
+# All endpoints require JWT authentication except registration and login.
+
 @router.get("/users/{user_id}", response_model=UserResponse, name="get_user", tags=["User Management Requires (Admin or Manager Roles)"])
 async def get_user(user_id: UUID, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
     """
@@ -78,6 +82,7 @@ async def get_user(user_id: UUID, request: Request, db: AsyncSession = Depends(g
 # This approach not only ensures that the API is secure and efficient but also promotes a better client
 # experience by adhering to REST principles and providing self-discoverable operations.
 
+# PATCH/PUT /users/{user_id} - Updates user profile fields. Handles edge cases for bio/profile_picture_url.
 @router.put("/users/{user_id}", response_model=UserResponse, name="update_user", tags=["User Management Requires (Admin or Manager Roles)"])
 async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
     """

@@ -27,6 +27,55 @@ async def test_create_user_with_invalid_data(db_session, email_service):
     user = await UserService.create(db_session, user_data, email_service)
     assert user is None
 
+# Test creating a user with invalid nickname (special characters)
+async def test_create_user_invalid_nickname_special_chars(db_session, email_service):
+    user_data = {
+        "nickname": "invalid!@#",
+        "email": "specialchar@example.com",
+        "password": "ValidPassword123!",
+    }
+    user = await UserService.create(db_session, user_data, email_service)
+    assert user is None
+
+# Test creating a user with too short nickname
+async def test_create_user_invalid_nickname_too_short(db_session, email_service):
+    user_data = {
+        "nickname": "ab",
+        "email": "shortnick@example.com",
+        "password": "ValidPassword123!",
+    }
+    user = await UserService.create(db_session, user_data, email_service)
+    assert user is None
+
+# Test creating a user with weak password
+async def test_create_user_weak_password(db_session, email_service):
+    user_data = {
+        "nickname": "weakpassuser",
+        "email": "weakpass@example.com",
+        "password": "password",
+    }
+    user = await UserService.create(db_session, user_data, email_service)
+    assert user is None
+
+# Test creating a user with duplicate nickname
+async def test_create_user_duplicate_nickname(db_session, email_service):
+    # Create a user with a specific nickname
+    user_data_1 = {
+        "nickname": "unique_nickname_123",
+        "email": "unique1@example.com",
+        "password": "ValidPassword123!",
+    }
+    user1 = await UserService.create(db_session, user_data_1, email_service)
+    assert user1 is not None
+    # Attempt to create another user with the same nickname
+    user_data_2 = {
+        "nickname": "unique_nickname_123",
+        "email": "unique2@example.com",
+        "password": "ValidPassword123!",
+    }
+    user2 = await UserService.create(db_session, user_data_2, email_service)
+    assert user2 is None, "Duplicate nickname should not be allowed"
+
 # Test fetching a user by ID when the user exists
 async def test_get_by_id_user_exists(db_session, user):
     retrieved_user = await UserService.get_by_id(db_session, user.id)
@@ -68,6 +117,54 @@ async def test_update_user_valid_data(db_session, user):
 # Test updating a user with invalid data
 async def test_update_user_invalid_data(db_session, user):
     updated_user = await UserService.update(db_session, user.id, {"email": "invalidemail"})
+    assert updated_user is None
+
+# Test updating profile fields edge cases
+async def test_update_profile_bio_and_picture(db_session, user):
+    update_data = {"bio": "New bio", "profile_picture_url": "https://example.com/pic.jpg"}
+    updated_user = await UserService.update(db_session, user.id, update_data)
+    assert updated_user is not None
+    assert updated_user.bio == "New bio"
+    assert updated_user.profile_picture_url == "https://example.com/pic.jpg"
+
+# Test updating only bio
+async def test_update_profile_bio_only(db_session, user):
+    update_data = {"bio": "Bio only update"}
+    updated_user = await UserService.update(db_session, user.id, update_data)
+    assert updated_user is not None
+    assert updated_user.bio == "Bio only update"
+
+# Test updating only profile picture
+async def test_update_profile_picture_only(db_session, user):
+    update_data = {"profile_picture_url": "https://example.com/onlypic.jpg"}
+    updated_user = await UserService.update(db_session, user.id, update_data)
+    assert updated_user is not None
+    assert updated_user.profile_picture_url == "https://example.com/onlypic.jpg"
+
+# Test duplicate email on update
+async def test_update_user_duplicate_email(db_session, user, email_service):
+    user2_data = {
+        "nickname": "dupemailuser",
+        "email": "dupemail@example.com",
+        "password": "ValidPassword123!",
+    }
+    user2 = await UserService.create(db_session, user2_data, email_service)
+    assert user2 is not None
+    update_data = {"email": "dupemail@example.com"}
+    updated_user = await UserService.update(db_session, user.id, update_data)
+    assert updated_user is None
+
+# Test duplicate nickname on update
+async def test_update_user_duplicate_nickname(db_session, user, email_service):
+    user2_data = {
+        "nickname": "dupnickuser",
+        "email": "dupnick@example.com",
+        "password": "ValidPassword123!",
+    }
+    user2 = await UserService.create(db_session, user2_data, email_service)
+    assert user2 is not None
+    update_data = {"nickname": "dupnickuser"}
+    updated_user = await UserService.update(db_session, user.id, update_data)
     assert updated_user is None
 
 # Test deleting a user who exists
