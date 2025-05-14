@@ -28,6 +28,7 @@ async def test_create_user_with_invalid_data(db_session, email_service):
     assert user is None
 
 # Test creating a user with invalid nickname (special characters)
+# Should fail due to invalid characters
 async def test_create_user_invalid_nickname_special_chars(db_session, email_service):
     user_data = {
         "nickname": "invalid!@#",
@@ -38,6 +39,7 @@ async def test_create_user_invalid_nickname_special_chars(db_session, email_serv
     assert user is None
 
 # Test creating a user with too short nickname
+# Should fail due to nickname being too short
 async def test_create_user_invalid_nickname_too_short(db_session, email_service):
     user_data = {
         "nickname": "ab",
@@ -48,6 +50,7 @@ async def test_create_user_invalid_nickname_too_short(db_session, email_service)
     assert user is None
 
 # Test creating a user with weak password
+# Should fail due to weak password
 async def test_create_user_weak_password(db_session, email_service):
     user_data = {
         "nickname": "weakpassuser",
@@ -120,6 +123,7 @@ async def test_update_user_invalid_data(db_session, user):
     assert updated_user is None
 
 # Test updating profile fields edge cases
+# Should succeed when updating both bio and profile picture
 async def test_update_profile_bio_and_picture(db_session, user):
     update_data = {"bio": "New bio", "profile_picture_url": "https://example.com/pic.jpg"}
     updated_user = await UserService.update(db_session, user.id, update_data)
@@ -128,6 +132,7 @@ async def test_update_profile_bio_and_picture(db_session, user):
     assert updated_user.profile_picture_url == "https://example.com/pic.jpg"
 
 # Test updating only bio
+# Should succeed when updating only bio
 async def test_update_profile_bio_only(db_session, user):
     update_data = {"bio": "Bio only update"}
     updated_user = await UserService.update(db_session, user.id, update_data)
@@ -135,6 +140,7 @@ async def test_update_profile_bio_only(db_session, user):
     assert updated_user.bio == "Bio only update"
 
 # Test updating only profile picture
+# Should succeed when updating only profile picture
 async def test_update_profile_picture_only(db_session, user):
     update_data = {"profile_picture_url": "https://example.com/onlypic.jpg"}
     updated_user = await UserService.update(db_session, user.id, update_data)
@@ -142,6 +148,7 @@ async def test_update_profile_picture_only(db_session, user):
     assert updated_user.profile_picture_url == "https://example.com/onlypic.jpg"
 
 # Test duplicate email on update
+# Should fail due to duplicate email
 async def test_update_user_duplicate_email(db_session, user, email_service):
     user2_data = {
         "nickname": "dupemailuser",
@@ -155,6 +162,7 @@ async def test_update_user_duplicate_email(db_session, user, email_service):
     assert updated_user is None
 
 # Test duplicate nickname on update
+# Should fail due to duplicate nickname
 async def test_update_user_duplicate_nickname(db_session, user, email_service):
     user2_data = {
         "nickname": "dupnickuser",

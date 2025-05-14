@@ -38,11 +38,13 @@ class UserBase(BaseModel):
         from_attributes = True
 
 class UserCreate(UserBase):
+    """Schema for user creation, with strong validation for password and nickname."""
     email: EmailStr = Field(..., example="john.doe@example.com")
     password: str = Field(..., example="Secure*1234")
 
     @validator('password')
     def password_complexity(cls, v):
+        # Enforce strong password requirements
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
         if not any(c.isupper() for c in v):
@@ -57,6 +59,7 @@ class UserCreate(UserBase):
 
     @validator('nickname')
     def nickname_valid(cls, v):
+        # Enforce nickname length and allowed characters
         if v is not None:
             if len(v) < 3 or len(v) > 50:
                 raise ValueError('Nickname must be between 3 and 50 characters')
@@ -65,6 +68,7 @@ class UserCreate(UserBase):
         return v
 
 class UserUpdate(UserBase):
+    """Schema for user update, with validation for nickname and optional fields."""
     email: Optional[EmailStr] = Field(None, example="john.doe@example.com")
     nickname: Optional[str] = Field(None, min_length=3, pattern=r'^[\w-]+$', example="john_doe123")
     first_name: Optional[str] = Field(None, example="John")
@@ -82,6 +86,7 @@ class UserUpdate(UserBase):
 
     @validator('nickname')
     def nickname_valid(cls, v):
+        # Enforce nickname length and allowed characters
         if v is not None:
             if len(v) < 3 or len(v) > 50:
                 raise ValueError('Nickname must be between 3 and 50 characters')

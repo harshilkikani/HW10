@@ -191,6 +191,8 @@ async def test_list_users_unauthorized(async_client, user_token):
     )
     assert response.status_code == 403  # Forbidden, as expected for regular user
 
+# Test creating a user with invalid nickname via API
+# Should return 422 Unprocessable Entity
 @pytest.mark.asyncio
 async def test_create_user_invalid_nickname_api(async_client, admin_token):
     user_data = {
@@ -202,6 +204,8 @@ async def test_create_user_invalid_nickname_api(async_client, admin_token):
     response = await async_client.post("/users/", json=user_data, headers=headers)
     assert response.status_code == 422
 
+# Test creating a user with weak password via API
+# Should return 422 Unprocessable Entity
 @pytest.mark.asyncio
 async def test_create_user_weak_password_api(async_client, admin_token):
     user_data = {
@@ -213,6 +217,8 @@ async def test_create_user_weak_password_api(async_client, admin_token):
     response = await async_client.post("/users/", json=user_data, headers=headers)
     assert response.status_code == 422
 
+# Test updating both bio and profile picture via API
+# Should succeed and return updated fields
 @pytest.mark.asyncio
 async def test_update_profile_bio_and_picture_api(async_client, admin_user, admin_token):
     update_data = {"bio": "API bio update", "profile_picture_url": "https://example.com/api-pic.jpg"}

@@ -18,8 +18,7 @@ class UserRole(Enum):
 
 class User(Base):
     """
-    Represents a user within the application, corresponding to the 'users' table in the database.
-    This class uses SQLAlchemy ORM for mapping attributes to database columns efficiently.
+    Represents a user in the system, with profile, authentication, and role fields.
     
     Attributes:
         id (UUID): Unique identifier for the user.

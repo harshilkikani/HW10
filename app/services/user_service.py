@@ -20,6 +20,8 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 class UserService:
+    """Service class for user-related business logic, including validation and edge case handling."""
+
     @classmethod
     async def _execute_query(cls, session: AsyncSession, query):
         try:
@@ -51,17 +53,16 @@ class UserService:
 
     @classmethod
     async def create(cls, session: AsyncSession, user_data: Dict[str, str], email_service: EmailService) -> Optional[User]:
+        """Create a new user with validation and uniqueness checks."""
         try:
             validated_data = UserCreate(**user_data).model_dump()
             # Enforce unique nickname if provided
             if 'nickname' in validated_data and validated_data['nickname']:
                 existing_nick = await cls.get_by_nickname(session, validated_data['nickname'])
                 if existing_nick:
-                    logger.error("User with given nickname already exists.")
                     return None
             existing_user = await cls.get_by_email(session, validated_data['email'])
             if existing_user:
-                logger.error("User with given email already exists.")
                 return None
             validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
             new_user = User(**validated_data)
@@ -76,15 +77,14 @@ class UserService:
             await session.commit()
             await email_service.send_verification_email(new_user)
             return new_user
-        except ValidationError as e:
-            logger.error(f"Validation error during user creation: {e}")
+        except ValidationError:
             return None
-        except Exception as e:
-            logger.error(f"Unexpected error during user creation: {e}")
+        except Exception:
             return None
 
     @classmethod
     async def update(cls, session: AsyncSession, user_id: UUID, update_data: Dict[str, str]) -> Optional[User]:
+        """Update user fields with validation and uniqueness checks. Handles profile edge cases."""
         try:
             validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
             # Enforce unique nickname if updating
@@ -92,12 +92,10 @@ class UserService:
                 existing_nick = await cls.get_by_nickname(session, validated_data['nickname'])
                 user = await cls.get_by_id(session, user_id)
                 if existing_nick and existing_nick.id != user_id:
-                    logger.error("Nickname already taken by another user.")
                     return None
             if 'email' in validated_data and validated_data['email']:
                 existing_user = await cls.get_by_email(session, validated_data['email'])
                 if existing_user and existing_user.id != user_id:
-                    logger.error("Email already taken by another user.")
                     return None
             if 'password' in validated_data:
                 validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
@@ -107,16 +105,11 @@ class UserService:
             updated_user = await cls.get_by_id(session, user_id)
             if updated_user:
                 session.refresh(updated_user)
-                logger.info(f"User {user_id} updated successfully.")
                 return updated_user
-            else:
-                logger.error(f"User {user_id} not found after update attempt.")
             return None
-        except ValidationError as e:
-            logger.error(f"Validation error during user update: {e}")
+        except ValidationError:
             return None
-        except Exception as e:
-            logger.error(f"Error during user update: {e}")
+        except Exception:
             return None
 
     @classmethod
