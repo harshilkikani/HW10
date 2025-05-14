@@ -52,3 +52,5 @@ Welcome to the Event Manager Company! This project is a robust, secure REST API 
 2. Start services: `docker-compose up --build`
 3. Access API docs: [http://localhost/docs](http://localhost/docs)
 4. Run tests: `docker-compose exec fastapi pytest`
+
+---
